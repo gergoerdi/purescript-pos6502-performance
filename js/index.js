@@ -1,5 +1,5 @@
 import * as Main from '../output/Main/index';
 
-console.log("foo");
+console.log("Before");
 Main.main();
-console.log("bar");
+console.log("After");

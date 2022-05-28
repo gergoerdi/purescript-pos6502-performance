@@ -101,18 +101,9 @@ readMemText from len =
     map (toUpper <<< fromCharArray) <<< traverse (map toChar <<< readMem <<< fromIntegral) $
     range (fromIntegral from) (fromIntegral $ from + len - fromIntegral 1)
 
-main :: Effect Unit
-main = do
-    -- mem <- liftEffect $ Arr.whole <$> Arr.empty 0x10000
-    -- mem <- map (either (unsafeCrashWith <<< AX.printError) (Arr.whole <<< _.body)) $ AN.request $ AX.defaultRequest
-    --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
-
-    -- mem <- map (either (unsafeCrashWith <<< AX.printError) (\x -> x)) $ AN.request $ AX.defaultRequest
-    --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
-    -- log $ mem.statusText
-
-    mem <- Arr.whole <$> (toArrayBuffer =<< readFile "data/img.mem")
-    log $ show $ Arr.byteLength mem
+initialize :: (String -> Effect ArrayBuffer) -> Effect (Effect Unit)
+initialize loadFile = do
+    mem <- Arr.whole <$> loadFile "data/img.mem"
 
     let printShortMessage = log =<< readMemText (fromIntegral 0xcb4a) (fromIntegral 36)
         printLongMessage = traverse_ log <<< chunksOf 35 =<< readMemText (fromIntegral 0xfe00) (fromIntegral 510)
@@ -121,7 +112,7 @@ main = do
     let runCPU :: _ -> Effect _
         runCPU = flip runReaderT mem <<< runMemory <<< flip runReaderT cpu
     
-    unsafePartial $ runCPU $ forever do
+    pure $ unsafePartial $ runCPU do
         getReg _.pc >>= \pc -> case fromIntegral pc of
             0x640b -> do
                 log "IO: MENU"
@@ -137,7 +128,7 @@ main = do
                 let fn = "data/disks/" <> fromCharArray (map toChar [x, y]) <> ".dat"
                 log $ "IO: LOAD_DISK " <> fn
                 liftEffect do
-                    buf <- map Arr.whole $ toArrayBuffer =<< readFile fn
+                    buf <- Arr.whole <$> loadFile fn
                     addr0 <- fromIntegral <<< toInt <<< fromJust <$> Arr.getUint16le buf 0
                     copyDataView buf 2 mem addr0
                 printLongMessage
@@ -152,4 +143,22 @@ main = do
                 printShortMessage
                 rts
             _ -> {- dump *> -} step
-        
+    
+
+main :: Effect Unit
+main = do
+    -- mem <- toArrayBuffer =<< readFile "data/img.mem"
+    
+    -- mem <- liftEffect $ Arr.whole <$> Arr.empty 0x10000
+    -- mem <- map (either (unsafeCrashWith <<< AX.printError) (Arr.whole <<< _.body)) $ AN.request $ AX.defaultRequest
+    --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
+
+    -- mem <- map (either (unsafeCrashWith <<< AX.printError) (\x -> x)) $ AN.request $ AX.defaultRequest
+    --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
+    -- log $ mem.statusText
+
+    step <- initialize (toArrayBuffer <=< readFile)
+    forever step
+
+-- main :: Effect Unit
+-- main = log "Main"
