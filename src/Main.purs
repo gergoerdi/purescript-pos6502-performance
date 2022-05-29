@@ -35,14 +35,14 @@ import Data.ArrayBuffer.Types (ArrayBuffer, ArrayView, Uint8, DataView, ByteOffs
 import Data.ArrayBuffer.DataView as Arr
 -- import Data.ArrayBuffer.Typed as Arr
 
--- import Affjax as AX
--- import Affjax.Node as AN
--- import Affjax.RequestBody as RequestBody
--- import Effect.Aff (launchAff, launchAff_)
--- import Partial
--- import Affjax.ResponseFormat as ResponseFormat
-import Node.FS.Sync
-import Node.Buffer
+-- -- import Affjax as AX
+-- -- import Affjax.Node as AN
+-- -- import Affjax.RequestBody as RequestBody
+-- -- import Effect.Aff (launchAff, launchAff_)
+-- -- import Partial
+-- -- import Affjax.ResponseFormat as ResponseFormat
+-- import Node.FS.Sync
+-- import Node.Buffer
 
 newtype Memory m a = Memory (ReaderT (DataView) m a)
 
@@ -103,7 +103,7 @@ readMemText from len =
 
 initialize :: (String -> Effect ArrayBuffer) -> Effect (Effect Unit)
 initialize loadFile = do
-    mem <- Arr.whole <$> loadFile "data/img.mem"
+    mem <- Arr.whole <$> loadFile "data/program.dat"
 
     let printShortMessage = log =<< readMemText (fromIntegral 0xcb4a) (fromIntegral 36)
         printLongMessage = traverse_ log <<< chunksOf 35 =<< readMemText (fromIntegral 0xfe00) (fromIntegral 510)
@@ -145,20 +145,20 @@ initialize loadFile = do
             _ -> {- dump *> -} step
     
 
-main :: Effect Unit
-main = do
-    -- mem <- toArrayBuffer =<< readFile "data/img.mem"
-    
-    -- mem <- liftEffect $ Arr.whole <$> Arr.empty 0x10000
-    -- mem <- map (either (unsafeCrashWith <<< AX.printError) (Arr.whole <<< _.body)) $ AN.request $ AX.defaultRequest
-    --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
-
-    -- mem <- map (either (unsafeCrashWith <<< AX.printError) (\x -> x)) $ AN.request $ AX.defaultRequest
-    --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
-    -- log $ mem.statusText
-
-    step <- initialize (toArrayBuffer <=< readFile)
-    forever step
-
 -- main :: Effect Unit
--- main = log "Main"
+-- main = do
+--     -- mem <- toArrayBuffer =<< readFile "data/img.mem"
+    
+--     -- mem <- liftEffect $ Arr.whole <$> Arr.empty 0x10000
+--     -- mem <- map (either (unsafeCrashWith <<< AX.printError) (Arr.whole <<< _.body)) $ AN.request $ AX.defaultRequest
+--     --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
+
+--     -- mem <- map (either (unsafeCrashWith <<< AX.printError) (\x -> x)) $ AN.request $ AX.defaultRequest
+--     --      { url = "data/img.mem", method = Left GET, responseFormat = ResponseFormat.arrayBuffer }
+--     -- log $ mem.statusText
+
+--     step <- initialize (toArrayBuffer <=< readFile)
+--     forever step
+
+main :: Effect Unit
+main = log "Main"
