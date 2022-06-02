@@ -2,7 +2,7 @@ module Main where
 
 import Hardware.MOS6502.Emu
 import Kastely.Text (toChar)
-
+import Data.Word
 
 import Prelude
 import Data.List.Lazy ((..))
@@ -101,25 +101,30 @@ readMemText from len =
     map (toUpper <<< fromCharArray) <<< traverse (map toChar <<< readMem <<< fromIntegral) $
     range (fromIntegral from) (fromIntegral $ from + len - fromIntegral 1)
 
-initialize :: (String -> Effect ArrayBuffer) -> Effect (Effect Unit)
+data IO
+    = Menu (Word8 -> Effect IO)
+    | LongMessage (Array String) (Effect IO)
+    | ShortMessage String (Effect IO)
+    | End 
+
+initialize :: (String -> Effect ArrayBuffer) -> Effect IO
 initialize loadFile = do
     mem <- Arr.whole <$> loadFile "data/program.dat"
 
-    let printShortMessage = log =<< readMemText (fromIntegral 0xcb4a) (fromIntegral 36)
-        printLongMessage = traverse_ log <<< chunksOf 35 =<< readMemText (fromIntegral 0xfe00) (fromIntegral 510)
-
     cpu <- new $ fromIntegral 0x438b
-    let runCPU :: _ -> Effect _
+    let runCPU :: forall a. ReaderT CPU (Memory Effect) a -> Effect a
         runCPU = flip runReaderT mem <<< runMemory <<< flip runReaderT cpu
-    
-    pure $ unsafePartial $ runCPU do
-        getReg _.pc >>= \pc -> case fromIntegral pc of
+
+    let run = unsafePartial $ runCPU $ flip tailRecM unit $ \_ -> do
+          getReg _.pc >>= \pc -> case fromIntegral pc of
             0x640b -> do
                 log "IO: MENU"
-                let selection = fromIntegral 0x07
-                lift $ writeMem (fromIntegral 0x680d) selection
-                setReg _.regA selection
-                rts
+                pure $ Done $ Menu \cmd -> do
+                    runCPU do
+                        lift $ writeMem (fromIntegral 0x680d) cmd
+                        setReg _.regA cmd
+                        rts
+                    run
 
             0xcc03 -> do
                 x <- getReg _.regX
@@ -131,18 +136,25 @@ initialize loadFile = do
                     buf <- Arr.whole <$> loadFile fn
                     addr0 <- fromIntegral <<< toInt <<< fromJust <$> Arr.getUint16le buf 0
                     copyDataView buf 2 mem addr0
-                printLongMessage
+                msg <- chunksOf 35 <$> readMemText (fromIntegral 0xfe00) (fromIntegral 510)
                 rts
-                
+                pure $ Done $ LongMessage msg run
+
             0x40a7 -> do
                 log "IO: CHECK_DISK"
                 setReg _.pc $ fromIntegral 0x40bb
+                pure $ Loop unit
 
             0x4679 -> do
                 log "IO: MSG_WAIT"
-                printShortMessage
+                msg <- readMemText (fromIntegral 0xcb4a) (fromIntegral 36)
                 rts
-            _ -> {- dump *> -} step
+                pure $ Done $ ShortMessage msg run
+            _ -> {- dump *> -} step *> pure (Loop unit)
+
+    runCPU do
+        msg <- chunksOf 35 <$> readMemText (fromIntegral 0xfe00) (fromIntegral 510)
+        pure $ LongMessage msg run
     
 
 -- main :: Effect Unit
@@ -159,6 +171,3 @@ initialize loadFile = do
 
 --     step <- initialize (toArrayBuffer <=< readFile)
 --     forever step
-
-main :: Effect Unit
-main = log "Main"
