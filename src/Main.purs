@@ -1,4 +1,4 @@
-module Main where
+module Main (IO(..), initialize) where
 
 import Hardware.MOS6502.Emu
 import Kastely.Text (toChar)

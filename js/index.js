@@ -1,4 +1,4 @@
-import * as Main from '../output/Main/index';
+import * as Main from '../output/bundle.js';
 import * as Files from './files.js';
 
 let divLong = document.getElementById("longMessage");

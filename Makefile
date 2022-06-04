@@ -3,7 +3,7 @@ DAT_FILES	= $(wildcard data/*.dat) $(wildcard data/disks/*.dat)
 DAT_JS_FILES	= $(patsubst %, js/%.js, $(DAT_FILES))
 
 html/bundle.js: js/index.js js/base64.js js/files.js $(PURS_FILES)
-	spago build
+	spago bundle-module -t output/bundle.js
 	esbuild --bundle $< --outfile=$@
 
 js/files.js: $(DAT_FILES)
