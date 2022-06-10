@@ -1,5 +1,5 @@
-// import * as Main from '../output/bundle.js';
-import * as Main from './jos6502.js';
+import * as Main from '../output/bundle.js';
+// import * as Main from './jos6502.js';
 import * as Files from './files.js';
 
 let before = +new Date();

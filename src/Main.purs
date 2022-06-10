@@ -72,6 +72,7 @@ instance MonadEffect m => MonadMachine (Memory m) where
         liftEffect $ fromIntegral <<< toInt <<< fromJust <$> Arr.getUint8 mem (fromIntegral addr)
 
     writeMem addr v = do
+        -- when (addr == fromIntegral 0x7646) $ log $ "writeMem " <> show (fromIntegral v :: Int)
         mem <- Memory ask
         void $ liftEffect $ Arr.setUint8 mem (fromIntegral addr) (fromInt $ fromIntegral v)
 
@@ -135,8 +136,8 @@ initialize loadFile = do
                 pure $ Loop unit
 
             _ -> do
-                pc <- getReg _.pc
-                liftEffect $ log $ hex 4 pc
+                -- pc <- getReg _.pc
+                -- liftEffect $ log $ hex 4 pc
                 step *> pure (Loop unit)
 
     -- runCPU do
