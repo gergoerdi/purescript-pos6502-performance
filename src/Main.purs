@@ -53,7 +53,7 @@ instance MonadEffect m => MonadMachine (Memory m) where
 runMemory :: forall m a. Memory m a -> ReaderT (DataView) m a
 runMemory (Memory act) = act
 
-initialize :: (String -> Effect ArrayBuffer) -> Effect Unit
+initialize :: (String -> Effect ArrayBuffer) -> Effect Int
 initialize loadFile = do
     mem <- Arr.whole <$> loadFile "data/program.dat"
 
@@ -61,9 +61,9 @@ initialize loadFile = do
     let runCPU :: forall a. ReaderT CPU (Memory Effect) a -> Effect a
         runCPU = flip runReaderT mem <<< runMemory <<< flip runReaderT cpu
 
-    let run = unsafePartial $ runCPU $ flip tailRecM unit $ \_ -> do
-          getReg _.pc >>= \pc -> case fromIntegral pc of
-            0x640b -> pure $ Done unit
-            _ -> step *> pure (Loop unit)
+    let run = unsafePartial $ runCPU $ flip tailRecM 0 $ \cnt -> do
+            getReg _.pc >>= \pc -> case fromIntegral pc of
+                0x640b -> pure $ Done cnt
+                _ -> step *> pure (Loop $ cnt + 1)
 
     run

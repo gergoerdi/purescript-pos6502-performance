@@ -9,27 +9,9 @@ export function initialize(loadFile) {
             writeMem: (addr, v) => mem.setUint8(addr, v)
         };
 
-        loop:
-        while(true) {
-            switch (r.cpu.pc) {
-            case 0x640b:
-                {
-                    let cmd = 0x07 & 0xff;
-                    r.writeMem(0x680d & 0xffff, cmd);
-                    r.cpu.regA = cmd;
-                    rts(r);
-                    break;
-                };
-            case 0x40a7:
-                r.cpu.pc = 0x40bb & 0xffff;
-                break;
-            case 0xcc03:
-                break loop; // TODO
-            default:
-                step(r);
-                break;
-            };
-        }
+        for (var cnt = 0; r.cpu.pc != 0x640b; ++cnt)
+            step(r);
+        return cnt;
     };
 };
     
