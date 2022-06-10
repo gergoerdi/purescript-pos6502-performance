@@ -2,7 +2,7 @@ PURS_FILES	= $(shell find src/ -type f -name '*.purs')
 DAT_FILES	= $(wildcard data/*.dat) $(wildcard data/disks/*.dat)
 DAT_JS_FILES	= $(patsubst %, js/%.js, $(DAT_FILES))
 
-html/bundle.js: js/index.js js/base64.js js/files.js js/jos6502.js $(PURS_FILES)
+html/bundle.js: js/index.js spago.dhall js/base64.js js/files.js js/jos6502.js $(PURS_FILES)
 	spago bundle-module -t output/bundle.js
 	esbuild --bundle $< --outfile=$@
 
