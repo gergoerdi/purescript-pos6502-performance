@@ -13,6 +13,7 @@
   , "tailrec"
   , "transformers"
   , "uint"
+  , "uncurried-transformers"
   , "word"
   ]
 , packages = ./packages.dhall

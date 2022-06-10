@@ -6,10 +6,12 @@ import Data.Word
 
 import Prelude
 import Data.Integral (fromIntegral)
-import Control.Monad.Reader
 import Data.Maybe (Maybe(..), fromJust)
 import Data.UInt (fromInt, toInt)
 import Partial.Unsafe (unsafePartial)
+import Control.Monad.Reader.Class
+import Control.Monad.Trans.Class
+import Uncurried.ReaderT
 import Control.Monad.Rec.Class
 
 
@@ -59,7 +61,7 @@ initialize loadFile = do
 
     cpu <- new $ fromIntegral 0x438b
     let runCPU :: forall a. ReaderT CPU (Memory Effect) a -> Effect a
-        runCPU = flip runReaderT mem <<< runMemory <<< flip runReaderT cpu
+        runCPU = runReaderT mem <<< runMemory <<< runReaderT cpu
 
     let run = unsafePartial $ runCPU $ flip tailRecM 0 $ \cnt -> do
             getReg _.pc >>= \pc -> case fromIntegral pc of
